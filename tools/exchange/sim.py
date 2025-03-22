@@ -90,9 +90,9 @@ class Instrument:
             self.update_price(tick_size, tick_time) 
             ord_price = self.curr_price
             ord_action = np.random.choice(order_action, [0.6, 0.4])
-            ord_qty = np.random.randint(1, 100)
+            ord_qty = self.generate_order_size(ord_type)
         elif ord_type == 'MARKET':
-            ord_qty = np.random.randint(1, 100)
+            ord_qty = self.generate_order_size(ord_type)
             ord_action = np.random.choice(order_action, [0.6, 0.4])
         elif ord_type == 'CANCEL':
             ref_id = np.random.choice(list(self.history.keys()))
@@ -101,7 +101,7 @@ class Instrument:
             ord_price = self.curr_price
             ref_id = np.random.choice(list(self.history.keys()))
             ord_action = np.random.choice(order_action, [0.6, 0.4])
-            ord_qty = np.random.randint(1, 100)
+            ord_qty = self.generate_order_size(ord_type)
 
         if ord_type == 'MODIFY': 
             ref_id = np.random.choice(list(self.history.keys()))
@@ -126,6 +126,19 @@ class Instrument:
     def tick(self, tick_size: float, tick_time: float) -> Order:
         self.tick_count += 1
         return self.next_order(tick_size, tick_time)
+
+    def generate_order_size(self, ord_type: str, base_size: float = 100) -> int:
+        if ord_type == 'MARKET':
+            # Market orders: larger sizes, less variance
+            mu = np.log(base_size) + 0.5  # centers around 150-200
+            sigma = 0.8  # tighter distribution
+        else:
+            # Limit orders: smaller sizes, more variance
+            mu = np.log(base_size)  # centers around 100
+            sigma = 1.2  # wider distribution
+        
+        size = int(np.random.lognormal(mu, sigma))
+        return max(1, min(size, base_size * 10))  # Cap size between 1 and 1000 for base_size=100
         
 class Exchange:
     """
